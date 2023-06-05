@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">MusicPlayer</string>
+    <string name="txt_term">Term</string>
+    <string name="btn_search">Search</string>
 </resources>
