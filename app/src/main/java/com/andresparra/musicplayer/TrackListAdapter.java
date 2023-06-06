@@ -42,7 +42,7 @@ public class TrackListAdapter  extends BaseAdapter {
 
     @Override
     public View getView(int pos, View convertView, ViewGroup parent) {
-        final int ROW_RESOURCE = R.layout.layout_list_row_item_play;
+        final int ROW_RESOURCE = R.layout.row_item;
         ViewHolder viewHolder = null;
 
         if (convertView == null){

@@ -7,7 +7,6 @@ import android.graphics.BitmapFactory;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -27,8 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cafsoft.foundation.HTTPURLResponse;
-import cafsoft.foundation.URLComponents;
-import cafsoft.foundation.URLQueryItem;
 import cafsoft.foundation.URLRequest;
 import cafsoft.foundation.URLSession;
 
@@ -56,26 +53,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
-
         tracks = new ArrayList<>();
-
-        /*
-        tracks.add(new Track("Track 1", "Artist 1"));
-        tracks.add(new Track("Track 2", "Artist 1"));
-        tracks.add(new Track("Track 3", "Artist 1"));
-        tracks.add(new Track("Track 1", "Artist 2"));
-        tracks.add(new Track("Track 4", "Artist 2"));
-        tracks.add(new Track("Track 6", "Artist 2"));
-        tracks.add(new Track("Track 11", "Artist 2"));
-        tracks.add(new Track("Track 21", "Artist 2"));
-        tracks.add(new Track("Track 5", "Artist 10"));
-        tracks.add(new Track("Track 7", "Artist 10"));
-        tracks.add(new Track("Track 21", "Artist 30"));
-        tracks.add(new Track("Track 5", "Artist 40"));
-        tracks.add(new Track("Track 7", "Artist 41"));
-
-         */
 
         initViews();
         initEvents();
@@ -104,15 +82,8 @@ public class MainActivity extends AppCompatActivity {
         lveItems.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int pos, long l) {
-
                 TrackListAdapter.ViewHolder viewHolder = new TrackListAdapter.ViewHolder(view);
-
-                //viewHolder.txtTrackName.setText("ZZZZZZzzzzzzz");
-
-
-
-
-                construirUrlPista(pos, viewHolder);
+                buildURLTrack(pos, viewHolder);
 
             }
         });
@@ -120,10 +91,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void getInfo(){
-        System.out.println("entra el clase");
         URL url = null;
-        final String name = songFind.getText().toString(); //Una Aventura
-        System.out.println("TTTTTTTTTTTT"+name);
+        final String name = songFind.getText().toString();
 
         String urlSearch = HOSTNAME + SERVICE  +  name;
         //urlSearch = urlSearch.replace("http:","https:");
@@ -149,15 +118,13 @@ public class MainActivity extends AppCompatActivity {
                     Gson json = gsonBuilder.create();
                     Root root = json.fromJson(text, Root.class);
 
-                    System.out.println("Linea 130: "+root.getResults().size());
-
                     if(root.getResults().size() > 0){
                         showInfo(root.getResults());
                         tracks.clear();
                     }
 
                     else {
-                        System.out.println("Nada, nadilla");
+                        System.out.println("Sin datos");
                     }
                 }
             }
@@ -167,30 +134,19 @@ public class MainActivity extends AppCompatActivity {
     public void showInfo(ArrayList<Result> results) {
         runOnUiThread(() -> {
 
-            //results.size();
-
             //String urlImage = "";
 
             for (Result result : results) {
 
-                tracks.add(new Track(result.getTrackName(), result.getArtistName(), result.getTrackId(), result.getPreviewUrl(), result.getArtworkUrl30()));
+                tracks.add(new Track(result.getTrackName(), result.getArtistName(), result.getTrackId(), result.getPreviewUrl(), result.getArtworkUrl100()));
 
                 // urlImage = result.getArtworkUrl30();
 
                 //getImage(urlImage);
 
             }
-
-
-            //tracks.add(new Track(result.getTrackName(), result.getArtistName()));
-
-
             TrackListAdapter adapter = new TrackListAdapter(this, tracks);
-
             lveItems.setAdapter(adapter);
-
-
-
         });
     }
 
@@ -232,80 +188,64 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    public void construirUrlPista(int posicion, TrackListAdapter.ViewHolder viewHolder)
+    public void buildURLTrack(int position, TrackListAdapter.ViewHolder viewHolder)
     {
-        Track cancion = tracks.get(posicion);
+        Track track = tracks.get(position);
 
-        String destFilename = this.getCacheDir() + "/" + cancion.getTrackId() + ".tmp.m4a";
+        String fullFilename = this.getCacheDir() + "/" + track.getTrackId() + ".tmp.m4a";
 
         try {
-            url = new URL(cancion.getPreviewUrl());
+            url = new URL(track.getPreviewUrl());
         } catch (MalformedURLException e) {
             //e.printStackTrace();
         }
 
-        //new File(destFilename).delete(); // borrar para descargar nuevamente
+        //new File(fullFilename).delete(); // borrar para descargar nuevamente
 
 
 
-        if (!new File(destFilename).exists()) {
-            viewHolder.imgAction.setImageDrawable(getDrawable(R.drawable.download));
-
-            downloadFile(url, destFilename);
-
-        } else {
+        if (new File(fullFilename).exists()) {
             // Ya fue descargado anteriormente y se encuentra en cache
-            viewHolder.imgAction.setImageDrawable(getDrawable(R.drawable.play));
-            reproducirPista(destFilename);
-
+            if (mediaPlayer == null) {
+                viewHolder.imgAction.setImageDrawable(getDrawable(R.drawable.stop));
+                playTrack(fullFilename);
+            }else{
+                viewHolder.imgAction.setImageDrawable(getDrawable(R.drawable.play));
+                stopTrack();
+            }
+        } else {
+            viewHolder.imgAction.setImageDrawable(getDrawable(R.drawable.download));
+            downloadFile(url, fullFilename);
         }
-
-
-
         //return url;
     }
 
-    public void downloadFile(URL audioURL, String destFilename){
+    public void downloadFile(URL audioURL, String fullFilename){
         URLSession.getShared().downloadTask(audioURL, (localAudioUrl, response, error) -> {
 
             if (error == null) {
                 int respCode = ((HTTPURLResponse) response).getStatusCode();
-
                 if (respCode == 200) {
                     File file = new File(localAudioUrl.getFile());
-                    if (file.renameTo(new File(destFilename))) {
-                        reproducirPista(destFilename);
-
+                    if (file.renameTo(new File(fullFilename))) {
+                        playTrack(fullFilename);
                     }
                 }
-                else{
-                    // Error (respCode)
-                }
-            }else {
-                // Connection error
             }
         }).resume();
     }
 
-    public void reproducirPista(String destFilename)
-    {
+    public void playTrack(String fullFilename) {
+        stopTrack();
+        mediaPlayer = MediaPlayer.create(this, Uri.parse(fullFilename));
+        mediaPlayer.start();
+    }
 
-        mediaPlayer = MediaPlayer.create(this, Uri.parse(destFilename));
-
-        if (mediaPlayer.isPlaying())
-        {
+    public void stopTrack() {
+        if(mediaPlayer != null){
             mediaPlayer.stop();
+            mediaPlayer.release();
+            mediaPlayer = null;
         }
-
-        else
-        {
-            mediaPlayer.start();
-        }
-
-        //mediaPlayer.reset();
-
-
-        //System.out.println(mediaPlayer.getTrackInfo().toString());
-
     }
 }

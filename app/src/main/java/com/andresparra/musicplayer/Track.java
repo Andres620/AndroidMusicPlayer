@@ -3,12 +3,12 @@ package com.andresparra.musicplayer;
 public class Track {
     private String trackName = "";
     private String artistName = "";
-    private String trackId = "";
+    private long trackId = 0;
     private String previewUrl= "";
     private String artwork = "";
     private int state;
 
-    public Track(String newTrackName, String newArtistName, String newTrackId,String newPreviewUrl, String newArtwork){
+    public Track(String newTrackName, String newArtistName, long newTrackId,String newPreviewUrl, String newArtwork){
         trackName = newTrackName;
         artistName = newArtistName;
         setTrackId(newTrackId);
@@ -33,11 +33,11 @@ public class Track {
         this.artistName = artistName;
     }
 
-    public String getTrackId() {
+    public long getTrackId() {
         return trackId;
     }
 
-    public void setTrackId(String trackId) {
+    public void setTrackId(long trackId) {
         this.trackId = trackId;
     }
 
